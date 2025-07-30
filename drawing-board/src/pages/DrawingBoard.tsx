@@ -3,21 +3,29 @@ import { useParams } from 'react-router-dom';
 import CanvasPage, { CanvasPageHandle } from '../components/CanvasPage';
 import Toolbar from '../components/Toolbar';
 import { loadProjects, saveProjects } from '../utils/localStorage';
-import type { ShapeType } from '../components/CanvasPage'; // ← 引入 ShapeType
+import type { ShapeType } from '../components/CanvasPage';
+import type { Project as ProjectType } from '../App';  // ✅ 避免名稱衝突
 
-const DrawingBoard = () => {
+type DrawingBoardProps = {
+  username: string;
+  projects: ProjectType[];
+  setProjects: React.Dispatch<React.SetStateAction<ProjectType[]>>;
+};
+
+
+const DrawingBoard = ({ username, projects, setProjects }: DrawingBoardProps) => {
   const { projectId } = useParams();
   const [color, setColor] = useState('#000000');
   const [thickness, setThickness] = useState(3);
-  const [mode, setMode] = useState<ShapeType>('brush'); // ✅ 指定類型
+  const [mode, setMode] = useState<ShapeType>('brush');
   const [zoom, setZoom] = useState(1);
-  const [projects, setProjects] = useState(loadProjects());
+  // const [projects, setProjects] = useState(loadProjects());
   const [currentPage, setCurrentPage] = useState(0);
   const canvasRef = useRef<CanvasPageHandle>(null);
   const [fontSize, setFontSize] = useState(20);
   const [fontFamily, setFontFamily] = useState('Arial');
-  
-  const projectIndex = projects.findIndex((p) => p.id === projectId);
+
+  const projectIndex = projects.findIndex((p: { id: string | undefined; }) => p.id === projectId);
   const project = projects[projectIndex];
 
   useEffect(() => {
@@ -45,6 +53,14 @@ const DrawingBoard = () => {
 
   const handleRedo = () => {
     canvasRef.current?.redo();
+  };
+
+  const handleBringForward = () => {
+    canvasRef.current?.bringForward();
+  };
+
+  const handleSendBackward = () => {
+    canvasRef.current?.sendBackward();
   };
 
   return (
@@ -83,10 +99,10 @@ const DrawingBoard = () => {
         <button onClick={handleRedo} style={{ marginLeft: 5 }}>
           Redo
         </button>
-        <button onClick={() => canvasRef.current?.bringForward()} style={{ marginLeft: 10 }}>
+        <button onClick={handleBringForward} style={{ marginLeft: 10 }}>
           Bring Forward
         </button>
-        <button onClick={() => canvasRef.current?.sendBackward()} style={{ marginLeft: 5 }}>
+        <button onClick={handleSendBackward} style={{ marginLeft: 5 }}>
           Send Backward
         </button>
       </div>
@@ -99,6 +115,8 @@ const DrawingBoard = () => {
         zoom={zoom}
         fontSize={fontSize}
         fontFamily={fontFamily}
+        lines={project.pages[currentPage]}
+        setLines={setLines}
       />
     </div>
   );

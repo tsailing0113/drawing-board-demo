@@ -1,59 +1,66 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
-import { loadProjects, saveProjects } from '../utils/localStorage';
+import type { Project } from '../App';
 
-const ProjectList = () => {
-  const [projects, setProjects] = useState<{ id: string; title: string; pages: any[][] }[]>([]);
+type Props = {
+  username: string;
+  onLogout: () => void;
+  projects: Project[];
+  setProjects: React.Dispatch<React.SetStateAction<Project[]>>;
+};
+
+const ProjectList: React.FC<Props> = ({ username, onLogout, projects, setProjects }) => {
   const [newTitle, setNewTitle] = useState('');
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const loaded = loadProjects();
-    setProjects(loaded);
-  }, []);
-
-  useEffect(() => {
-    saveProjects(projects);
-  }, [projects]);
-
-  const createProject = () => {
+  const handleCreateProject = () => {
     if (!newTitle.trim()) return;
-    const newProject = {
+
+    const newProject: Project = {
       id: uuidv4(),
       title: newTitle.trim(),
-      pages: [[]] // 初始一頁空白
+      pages: [[]], // 初始空白畫布
     };
-    const updated = [...projects, newProject];
-    setProjects(updated);
-    setNewTitle('');
+
+    const updatedProjects = [...projects, newProject];
+    setProjects(updatedProjects);
+    localStorage.setItem(`projects-${username}`, JSON.stringify(updatedProjects));
+
+    navigate(`/project/${newProject.id}`);
+  };
+
+  const handleClearAll = () => {
+    if (window.confirm('Are you sure you want to delete all projects?')) {
+      localStorage.removeItem(`projects-${username}`);
+      setProjects([]);
+    }
   };
 
   return (
     <div style={{ padding: 20 }}>
-      <h1>My Projects</h1>
+      <h2>Welcome, {username}!</h2>
+      <input
+        value={newTitle}
+        onChange={(e) => setNewTitle(e.target.value)}
+        placeholder="Enter project title"
+      />
+      <button onClick={handleCreateProject}>+ New Project</button>
+      <button onClick={handleClearAll} style={{ marginLeft: 10 }}>🗑️ Clear All</button>
+      <button onClick={onLogout} style={{ marginLeft: 10 }}>🔓 Logout</button>
 
-      <div style={{ marginBottom: 20 }}>
-        <input
-          type="text"
-          placeholder="Enter project title"
-          value={newTitle}
-          onChange={(e) => setNewTitle(e.target.value)}
-        />
-        <button onClick={createProject} style={{ marginLeft: 10 }}>
-          + New Project
-        </button>
-      </div>
+      <hr />
 
-      <ul>
+      <div>
+        {projects.length === 0 && <p>No projects yet.</p>}
         {projects.map((project) => (
-          <li key={project.id} style={{ marginBottom: 10 }}>
+          <div key={project.id} style={{ margin: '10px 0' }}>
             <button onClick={() => navigate(`/project/${project.id}`)}>
-              {project.title}
+              🖌️ {project.title}
             </button>
-          </li>
+          </div>
         ))}
-      </ul>
+      </div>
     </div>
   );
 };
