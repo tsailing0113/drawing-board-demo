@@ -1,10 +1,10 @@
 {
   "files": {
-    "main.js": "/drawing-board-demo/static/js/main.f26367da.js",
+    "main.js": "/drawing-board-demo/static/js/main.c9937c49.js",
     "index.html": "/drawing-board-demo/index.html",
-    "main.f26367da.js.map": "/drawing-board-demo/static/js/main.f26367da.js.map"
+    "main.c9937c49.js.map": "/drawing-board-demo/static/js/main.c9937c49.js.map"
   },
   "entrypoints": [
-    "static/js/main.f26367da.js"
+    "static/js/main.c9937c49.js"
   ]
 }
