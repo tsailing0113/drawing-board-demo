@@ -13,9 +13,11 @@ import {
   Circle,
   Arrow,
   Text,
-  RegularPolygon
+  RegularPolygon,
+  Image as KonvaImage
 } from 'react-konva';
 import Konva from 'konva';
+
 
 export type ShapeType = 'brush' | 'eraser' | 'rect' | 'circle' | 'triangle' | 'arrow' | 'text';
 
@@ -36,7 +38,7 @@ type CanvasPageProps = {
 };
 
 const CanvasPage = forwardRef<CanvasPageHandle, CanvasPageProps>(
-  ({ color, thickness, mode, zoom, fontSize, fontFamily  }, ref) => {
+  ({ color, thickness, mode, zoom, fontSize, fontFamily }, ref) => {
     const [elements, setElements] = useState<any[]>([]);
     const [redoStack, setRedoStack] = useState<any[]>([]);
     const [current, setCurrent] = useState<any>(null);
@@ -50,14 +52,7 @@ const CanvasPage = forwardRef<CanvasPageHandle, CanvasPageProps>(
       setEditingId(null);
     }, [mode]);
 
-
-    // 🧠 提供 undo / redo 給 parent
-    useImperativeHandle(ref, () => ({
-      undo,
-      redo,
-      bringForward,
-      sendBackward
-    }));
+    useImperativeHandle(ref, () => ({ undo, redo, bringForward, sendBackward }));
 
     const undo = () => {
       if (elements.length === 0) return;
@@ -74,7 +69,6 @@ const CanvasPage = forwardRef<CanvasPageHandle, CanvasPageProps>(
       setRedoStack(rest);
     };
 
-    // 👉 向前移動一層
     const bringForward = () => {
       if (selectedId === null || selectedId >= elements.length - 1) return;
       const newElements = [...elements];
@@ -82,10 +76,9 @@ const CanvasPage = forwardRef<CanvasPageHandle, CanvasPageProps>(
       newElements[selectedId] = newElements[selectedId + 1];
       newElements[selectedId + 1] = temp;
       setElements(newElements);
-      setSelectedId(selectedId + 1); // 更新選取 ID
+      setSelectedId(selectedId + 1);
     };
 
-    // 👉 向後移動一層
     const sendBackward = () => {
       if (selectedId === null || selectedId <= 0) return;
       const newElements = [...elements];
@@ -93,10 +86,68 @@ const CanvasPage = forwardRef<CanvasPageHandle, CanvasPageProps>(
       newElements[selectedId] = newElements[selectedId - 1];
       newElements[selectedId - 1] = temp;
       setElements(newElements);
-      setSelectedId(selectedId - 1); // 更新選取 ID
+      setSelectedId(selectedId - 1);
+    };
+
+    const handleDropImage = (e: React.DragEvent<HTMLDivElement>) => {
+      e.preventDefault();
+      console.log('📥 Image dropped');
+
+      const stage = stageRef.current;
+      if (!stage) return;
+
+      const canvasWidth = stage.width();
+      const canvasHeight = stage.height();
+      const files = Array.from(e.dataTransfer.files);
+      const imageFiles = files.filter(file => file.type.startsWith('image/'));
+
+      if (imageFiles.length === 0) {
+        console.warn('⚠️ No image files dropped.');
+        return;
+      }
+
+      imageFiles.forEach((file, index) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const imageObj = new window.Image();
+          imageObj.src = reader.result as string;
+
+          imageObj.onload = () => {
+            console.log('🖼️ Image fully loaded:', imageObj);
+            const scaleFactor = (canvasWidth / 5) / imageObj.width;
+
+            const width = imageObj.width * scaleFactor;
+            const height = imageObj.height * scaleFactor;
+
+            const x = (canvasWidth - width) / 2 + index * 30; // 每張圖片錯開
+            const y = (canvasHeight - height) / 2 + index * 30;
+
+            const newEl = {
+              type: 'image',
+              image: imageObj,
+              x,
+              y,
+              width,
+              height,
+            };
+
+            console.log('🧱 Adding to elements:', newEl);
+            setElements((prev) => [...prev, newEl]);
+          };
+        };
+        reader.readAsDataURL(file);
+      });
     };
 
     const handleMouseDown = (e: any) => {
+      if (e.target.className === 'Image') {
+        return;
+      }
+      const stage = stageRef.current;
+      const clickedOnEmpty = e.target === stage || e.target === stage.getStage();
+
+      // 如果是點到其他元素（如 image），不要畫圖
+      if (!clickedOnEmpty && mode !== 'text') return;
 
       isDrawing.current = true;
       const pos = e.target.getStage().getPointerPosition();
@@ -147,13 +198,8 @@ const CanvasPage = forwardRef<CanvasPageHandle, CanvasPageProps>(
           });
           break;
         case 'text': {
-          const stage = stageRef.current;
-          if (!stage) return;
-
-          const clickedOnEmpty = e.target === stage;
           if (!clickedOnEmpty) return;
 
-          const pos = stage.getPointerPosition();
           const newText = prompt('Enter text:') || '';
           setElements([
             ...elements,
@@ -184,8 +230,7 @@ const CanvasPage = forwardRef<CanvasPageHandle, CanvasPageProps>(
       } else if (current.type === 'circle' || current.type === 'triangle') {
         const dx = pos.x - current.x;
         const dy = pos.y - current.y;
-        const radius = Math.sqrt(dx * dx + dy * dy);
-        setCurrent({ ...current, radius });
+        setCurrent({ ...current, radius: Math.sqrt(dx * dx + dy * dy) });
       } else if (current.type === 'arrow') {
         const newPoints = [current.points[0], current.points[1], pos.x, pos.y];
         setCurrent({ ...current, points: newPoints });
@@ -195,14 +240,18 @@ const CanvasPage = forwardRef<CanvasPageHandle, CanvasPageProps>(
     const handleMouseUp = () => {
       if (current) {
         setElements([...elements, current]);
-        setRedoStack([]); // 一旦繪製新圖形，清除 redo
+        setRedoStack([]);
         setCurrent(null);
       }
       isDrawing.current = false;
     };
 
     return (
-      <>
+      <div
+        onDrop={handleDropImage}
+        onDragOver={(e) => e.preventDefault()}
+        style={{ width: '100%', height: '500px' }}
+      >
         <Stage
           ref={stageRef}
           width={window.innerWidth - 40}
@@ -231,31 +280,32 @@ const CanvasPage = forwardRef<CanvasPageHandle, CanvasPageProps>(
                 case 'circle':
                   return <Circle key={i} {...el} stroke={isSelected ? 'blue' : el.stroke} dash={isSelected ? [4, 4] : []} onClick={() => setSelectedId(i)} />;
                 case 'triangle':
-                  return (
-                    <RegularPolygon
-                      key={i}
-                      x={el.x}
-                      y={el.y}
-                      sides={3}
-                      radius={el.radius}
-                      strokeWidth={el.strokeWidth}
-                      stroke={isSelected ? 'blue' : el.stroke} 
-                      dash={isSelected ? [4, 4] : []} 
-                      onClick={() => setSelectedId(i)} 
-                    />
-                  );
+                  return <RegularPolygon key={i} x={el.x} y={el.y} sides={3} radius={el.radius} strokeWidth={el.strokeWidth} stroke={isSelected ? 'blue' : el.stroke} dash={isSelected ? [4, 4] : []} onClick={() => setSelectedId(i)} />;
                 case 'arrow':
                   return <Arrow key={i} {...el} onClick={() => setSelectedId(i)} />;
                 case 'text':
+                  return <Text key={i} {...el} draggable stroke={selectedId === i ? 'blue' : undefined} strokeWidth={selectedId === i ? 0.5 : 0} onClick={() => setSelectedId(i)} onDblClick={() => setEditingId(i)} onDragEnd={(e) => {
+                    const newElements = [...elements];
+                    newElements[i] = { ...newElements[i], x: e.target.x(), y: e.target.y() };
+                    setElements(newElements);
+                  }} />;
+                case 'image':
                   return (
-                    <Text
+                    <KonvaImage
                       key={i}
-                      {...el}
+                      image={el.image}
+                      x={el.x}
+                      y={el.y}
+                      width={el.width}
+                      height={el.height}
                       draggable
-                      stroke={selectedId === i ? 'blue' : undefined}
-                      strokeWidth={selectedId === i ? 0.5 : 0}
                       onClick={() => setSelectedId(i)}
-                      onDblClick={() => setEditingId(i)}
+                      onDragStart={(e) => {
+                        // 🛑 阻止事件傳遞到 Stage（避免畫筆誤觸）
+                        e.cancelBubble = true;
+                        isDrawing.current = false;
+                        setCurrent(null);
+                      }}
                       onDragEnd={(e) => {
                         const newElements = [...elements];
                         newElements[i] = {
@@ -273,36 +323,7 @@ const CanvasPage = forwardRef<CanvasPageHandle, CanvasPageProps>(
             })}
           </Layer>
         </Stage>
-
-        {editingId !== null && elements[editingId]?.type === 'text' && (
-          <input
-            autoFocus
-            type="text"
-            value={elements[editingId].text}
-            style={{
-              position: 'absolute',
-              top: stageRef.current?.container().getBoundingClientRect().top +
-                  elements[editingId].y * zoom,
-              left: stageRef.current?.container().getBoundingClientRect().left +
-                    elements[editingId].x * zoom,
-              fontSize: elements[editingId].fontSize,
-              fontFamily: elements[editingId].fontFamily,
-              padding: '2px',
-              border: '1px solid gray',
-              zIndex: 10,
-            }}
-            onChange={(e) => {
-              const newElements = [...elements];
-              newElements[editingId].text = e.target.value;
-              setElements(newElements);
-            }}
-            onBlur={() => setEditingId(null)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') setEditingId(null);
-            }}
-          />
-        )}
-      </>
+      </div>
     );
   }
 );
