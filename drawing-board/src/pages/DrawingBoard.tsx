@@ -5,6 +5,7 @@ import Toolbar from '../components/Toolbar';
 import { loadProjects, saveProjects } from '../utils/localStorage';
 import type { ShapeType } from '../components/CanvasPage';
 import type { Project as ProjectType } from '../App';  // ✅ 避免名稱衝突
+import '../App.css'
 
 type DrawingBoardProps = {
   username: string;
@@ -64,8 +65,8 @@ const DrawingBoard = ({ username, projects, setProjects }: DrawingBoardProps) =>
   };
 
   return (
-    <div style={{ padding: 20 }}>
-      <h2>{project.title}</h2>
+    <div className="p-6 bg-gray-100 min-h-screen">
+      <h2 className="text-2xl font-bold text-indigo-600 mb-4">{project.title}</h2>
 
       <Toolbar
         color={color}
@@ -82,42 +83,70 @@ const DrawingBoard = ({ username, projects, setProjects }: DrawingBoardProps) =>
         setFontFamily={setFontFamily}
       />
 
-      <div style={{ marginBottom: 10 }}>
-        <button onClick={() => setCurrentPage((p) => Math.max(0, p - 1))}>Prev</button>
-        <span style={{ margin: '0 10px' }}>
+      <div className="flex items-center flex-wrap gap-2 my-4">
+        <button
+          onClick={() => setCurrentPage((p) => Math.max(0, p - 1))}
+          className="px-4 py-2 bg-indigo-500 text-white rounded-md hover:bg-indigo-600"
+        >
+          Prev
+        </button>
+        <span className="text-gray-700 font-medium">
           Page {currentPage + 1} / {project.pages.length}
         </span>
-        <button onClick={() => setCurrentPage((p) => Math.min(project.pages.length - 1, p + 1))}>
+        <button
+          onClick={() => setCurrentPage((p) => Math.min(project.pages.length - 1, p + 1))}
+          className="px-4 py-2 bg-indigo-500 text-white rounded-md hover:bg-indigo-600"
+        >
           Next
         </button>
-        <button onClick={addPage} style={{ marginLeft: 10 }}>
+
+        <button
+          onClick={addPage}
+          className="ml-4 px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600"
+        >
           + Page
         </button>
-        <button onClick={handleUndo} style={{ marginLeft: 10 }}>
+
+        <button
+          onClick={handleUndo}
+          className="ml-2 px-4 py-2 bg-gray-400 text-white rounded-md hover:bg-gray-500"
+        >
           Undo
         </button>
-        <button onClick={handleRedo} style={{ marginLeft: 5 }}>
+        <button
+          onClick={handleRedo}
+          className="ml-1 px-4 py-2 bg-gray-400 text-white rounded-md hover:bg-gray-500"
+        >
           Redo
         </button>
-        <button onClick={handleBringForward} style={{ marginLeft: 10 }}>
+
+        <button
+          onClick={handleBringForward}
+          className="ml-4 px-4 py-2 bg-blue-400 text-white rounded-md hover:bg-blue-500"
+        >
           Bring Forward
         </button>
-        <button onClick={handleSendBackward} style={{ marginLeft: 5 }}>
+        <button
+          onClick={handleSendBackward}
+          className="ml-1 px-4 py-2 bg-blue-400 text-white rounded-md hover:bg-blue-500"
+        >
           Send Backward
         </button>
       </div>
 
-      <CanvasPage
-        ref={canvasRef}
-        color={color}
-        thickness={thickness}
-        mode={mode}
-        zoom={zoom}
-        fontSize={fontSize}
-        fontFamily={fontFamily}
-        lines={project.pages[currentPage]}
-        setLines={setLines}
-      />
+      <div className="bg-white rounded-xl shadow-md p-4">
+        <CanvasPage
+          ref={canvasRef}
+          color={color}
+          thickness={thickness}
+          mode={mode}
+          zoom={zoom}
+          fontSize={fontSize}
+          fontFamily={fontFamily}
+          lines={project.pages[currentPage]}
+          setLines={setLines}
+        />
+      </div>
     </div>
   );
 };

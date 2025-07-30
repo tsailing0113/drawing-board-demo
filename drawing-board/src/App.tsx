@@ -3,6 +3,7 @@ import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import ProjectList from './pages/ProjectList';
 import DrawingBoard from './pages/DrawingBoard';
 import Login from './pages/Login';
+import './App.css'
 
 export type Project = {
   id: string;
