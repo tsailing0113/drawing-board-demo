@@ -2,6 +2,9 @@
 
 A simple collaborative drawing board prototype using React + Konva.
 
+## Link
+https://tsailing0113.github.io/drawing-board-demo
+
 ## How to Run
 
 ```bash
