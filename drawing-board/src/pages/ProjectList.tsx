@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
-import type { Project } from '../App';
+import type { Project } from '../utils/localStorage';
+import { saveProjects } from '../utils/localStorage';
 import '../App.css'
 
 type Props = {
@@ -26,9 +27,10 @@ const ProjectList: React.FC<Props> = ({ username, onLogout, projects, setProject
 
     const updatedProjects = [...projects, newProject];
     setProjects(updatedProjects);
+    saveProjects(updatedProjects);
     localStorage.setItem(`projects-${username}`, JSON.stringify(updatedProjects));
 
-    navigate(`/project/${newProject.id}`);
+    navigate(`/users/${username}/projects/${newProject.id}`);
   };
 
   const handleClearAll = () => {
@@ -85,7 +87,7 @@ const ProjectList: React.FC<Props> = ({ username, onLogout, projects, setProject
             {projects.map((project) => (
               <div key={project.id}>
                 <button
-                  onClick={() => navigate(`/project/${project.id}`)}
+                  onClick={() => navigate(`/users/${username}/projects/${project.id}`)}
                   className="w-full text-left px-4 py-2 bg-indigo-100 hover:bg-indigo-200 rounded-md"
                 >
                   🖌️ {project.title}

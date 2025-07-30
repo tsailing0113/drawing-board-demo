@@ -1,15 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, Navigate, useParams } from 'react-router-dom';
 import ProjectList from './pages/ProjectList';
 import DrawingBoard from './pages/DrawingBoard';
 import Login from './pages/Login';
-import './App.css'
-
-export type Project = {
-  id: string;
-  title: string;
-  pages: any[][];
-};
+import { loadProjects, saveProjects, getCurrentUser } from './utils/localStorage';
+import type { Project } from './utils/localStorage';
+import './App.css';
 
 function App() {
   const [loggedIn, setLoggedIn] = useState(() => localStorage.getItem('loggedIn') === 'true');
@@ -19,11 +15,20 @@ function App() {
     return stored ? JSON.parse(stored) : [];
   });
 
+  useEffect(() => {
+    if (loggedInUser) {
+      const stored = localStorage.getItem(`projects-${loggedInUser}`);
+      setProjects(stored ? JSON.parse(stored) : []);
+    }
+  }, [loggedInUser]);
+
   const handleLogin = (username: string) => {
     localStorage.setItem('loggedIn', 'true');
     localStorage.setItem('username', username);
     setLoggedIn(true);
     setLoggedInUser(username);
+    const userProjects = loadProjects();
+    setProjects(userProjects);
   };
 
   const handleLogout = () => {
@@ -31,7 +36,14 @@ function App() {
     localStorage.removeItem('username');
     setLoggedIn(false);
     setLoggedInUser('');
+    setProjects([]);
   };
+
+  useEffect(() => {
+    if (loggedIn) {
+      saveProjects(projects);
+    }
+  }, [projects, loggedIn]);
 
   return (
     <Router>
@@ -40,27 +52,36 @@ function App() {
           path="/"
           element={
             loggedIn ? (
-              <Navigate to="/projects" />
+              <Navigate to={`/users/${loggedInUser}/projects`} />
             ) : (
               <Login onLogin={handleLogin} />
             )
           }
         />
         <Route
-          path="/projects"
+          path="/users/:username/projects"
           element={
             loggedIn ? (
-              <ProjectList username={loggedInUser} onLogout={handleLogout} projects={projects} setProjects={setProjects} />
+              <ProjectList
+                username={loggedInUser}
+                onLogout={handleLogout}
+                projects={projects}
+                setProjects={setProjects}
+              />
             ) : (
               <Navigate to="/" />
             )
           }
         />
         <Route
-          path="/project/:projectId"
+          path="/users/:username/projects/:projectId"
           element={
             loggedIn ? (
-              <DrawingBoard username={loggedInUser} projects={projects} setProjects={setProjects} />
+              <DrawingBoard
+                username={loggedInUser}
+                projects={projects}
+                setProjects={setProjects}
+              />
             ) : (
               <Navigate to="/" />
             )
