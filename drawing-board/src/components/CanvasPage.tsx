@@ -28,15 +28,25 @@ type CanvasPageProps = {
   thickness: number;
   mode: ShapeType;
   zoom: number;
+  fontSize: number;
+  fontFamily: string;
 };
 
 const CanvasPage = forwardRef<CanvasPageHandle, CanvasPageProps>(
-  ({ color, thickness, mode, zoom }, ref) => {
+  ({ color, thickness, mode, zoom, fontSize, fontFamily  }, ref) => {
     const [elements, setElements] = useState<any[]>([]);
     const [redoStack, setRedoStack] = useState<any[]>([]);
     const [current, setCurrent] = useState<any>(null);
     const isDrawing = useRef(false);
     const stageRef = useRef<any>(null);
+    const [selectedId, setSelectedId] = useState<number | null>(null);
+    const [editingId, setEditingId] = useState<number | null>(null);
+
+    useEffect(() => {
+      setSelectedId(null);
+      setEditingId(null);
+    }, [mode]);
+
 
     // 🧠 提供 undo / redo 給 parent
     useImperativeHandle(ref, () => ({
@@ -62,6 +72,10 @@ const CanvasPage = forwardRef<CanvasPageHandle, CanvasPageProps>(
     const handleMouseDown = (e: any) => {
       isDrawing.current = true;
       const pos = e.target.getStage().getPointerPosition();
+      if (e.target === e.target.getStage()) {
+        setSelectedId(null);
+        setEditingId(null);
+      }
 
       switch (mode) {
         case 'brush':
@@ -105,18 +119,31 @@ const CanvasPage = forwardRef<CanvasPageHandle, CanvasPageProps>(
             strokeWidth: thickness
           });
           break;
-        case 'text':
+        case 'text': {
+          const stage = stageRef.current;
+          if (!stage) return;
+
+          const clickedOnEmpty = e.target === stage;
+          if (!clickedOnEmpty) return;
+
+          const pos = stage.getPointerPosition();
           const newText = prompt('Enter text:') || '';
-          setElements([...elements, {
-            type: 'text',
-            x: pos.x,
-            y: pos.y,
-            text: newText,
-            fontSize: 20,
-            fill: color
-          }]);
-          setRedoStack([]); // 清除 redo stack
+          setElements([
+            ...elements,
+            {
+              type: 'text',
+              x: pos.x,
+              y: pos.y,
+              text: newText,
+              fontSize,
+              fontFamily,
+              fill: color,
+            },
+          ]);
+          setRedoStack([]);
           break;
+        }
+
       }
     };
 
@@ -149,48 +176,98 @@ const CanvasPage = forwardRef<CanvasPageHandle, CanvasPageProps>(
     };
 
     return (
-      <Stage
-        ref={stageRef}
-        width={window.innerWidth - 40}
-        height={500}
-        scaleX={zoom}
-        scaleY={zoom}
-        onMouseDown={handleMouseDown}
-        onMousemove={handleMouseMove}
-        onMouseup={handleMouseUp}
-        style={{ border: '1px solid #ccc', background: 'white' }}
-      >
-        <Layer>
-          {[...elements, current].filter(Boolean).map((el, i) => {
-            switch (el.type) {
-              case 'line':
-                return <Line key={i} {...el} lineCap="round" tension={0.5} globalCompositeOperation={el.globalCompositeOperation} />;
-              case 'rect':
-                return <Rect key={i} {...el} />;
-              case 'circle':
-                return <Circle key={i} {...el} />;
-              case 'triangle':
-                return (
-                  <RegularPolygon
-                    key={i}
-                    x={el.x}
-                    y={el.y}
-                    sides={3}
-                    radius={el.radius}
-                    stroke={el.stroke}
-                    strokeWidth={el.strokeWidth}
-                  />
-                );
-              case 'arrow':
-                return <Arrow key={i} {...el} />;
-              case 'text':
-                return <Text key={i} {...el} />;
-              default:
-                return null;
-            }
-          })}
-        </Layer>
-      </Stage>
+      <>
+        <Stage
+          ref={stageRef}
+          width={window.innerWidth - 40}
+          height={500}
+          scaleX={zoom}
+          scaleY={zoom}
+          onMouseDown={handleMouseDown}
+          onMousemove={handleMouseMove}
+          onMouseup={handleMouseUp}
+          style={{ border: '1px solid #ccc', background: 'white' }}
+        >
+          <Layer>
+            {[...elements, current].filter(Boolean).map((el, i) => {
+              switch (el.type) {
+                case 'line':
+                  return <Line key={i} {...el} lineCap="round" tension={0.5} globalCompositeOperation={el.globalCompositeOperation} />;
+                case 'rect':
+                  return <Rect key={i} {...el} />;
+                case 'circle':
+                  return <Circle key={i} {...el} />;
+                case 'triangle':
+                  return (
+                    <RegularPolygon
+                      key={i}
+                      x={el.x}
+                      y={el.y}
+                      sides={3}
+                      radius={el.radius}
+                      stroke={el.stroke}
+                      strokeWidth={el.strokeWidth}
+                    />
+                  );
+                case 'arrow':
+                  return <Arrow key={i} {...el} />;
+                case 'text':
+                  return (
+                    <Text
+                      key={i}
+                      {...el}
+                      draggable
+                      stroke={selectedId === i ? 'blue' : undefined}
+                      strokeWidth={selectedId === i ? 0.5 : 0}
+                      onClick={() => setSelectedId(i)}
+                      onDblClick={() => setEditingId(i)}
+                      onDragEnd={(e) => {
+                        const newElements = [...elements];
+                        newElements[i] = {
+                          ...newElements[i],
+                          x: e.target.x(),
+                          y: e.target.y(),
+                        };
+                        setElements(newElements);
+                      }}
+                    />
+                  );
+                default:
+                  return null;
+              }
+            })}
+          </Layer>
+        </Stage>
+
+        {editingId !== null && elements[editingId]?.type === 'text' && (
+          <input
+            autoFocus
+            type="text"
+            value={elements[editingId].text}
+            style={{
+              position: 'absolute',
+              top: stageRef.current?.container().getBoundingClientRect().top +
+                  elements[editingId].y * zoom,
+              left: stageRef.current?.container().getBoundingClientRect().left +
+                    elements[editingId].x * zoom,
+              fontSize: elements[editingId].fontSize,
+              fontFamily: elements[editingId].fontFamily,
+              padding: '2px',
+              border: '1px solid gray',
+              zIndex: 10,
+            }}
+            onChange={(e) => {
+              const newElements = [...elements];
+              newElements[editingId].text = e.target.value;
+              setElements(newElements);
+            }}
+            onBlur={() => setEditingId(null)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') setEditingId(null);
+            }}
+          />
+        )}
+      </>
     );
   }
 );

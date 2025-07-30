@@ -8,9 +8,13 @@ type ToolbarProps = {
   thickness: number;
   setThickness: (n: number) => void;
   mode: ShapeType;
-  setMode: (m: ShapeType) => void; // ✅ 改這裡！
+  setMode: (m: ShapeType) => void;
   zoom: number;
   setZoom: (z: number) => void;
+  fontSize: number;
+  setFontSize: (n: number) => void;
+  fontFamily: string;
+  setFontFamily: (f: string) => void;
 };
 
 const Toolbar = ({
@@ -21,7 +25,11 @@ const Toolbar = ({
   mode,
   setMode,
   zoom,
-  setZoom
+  setZoom,
+  fontSize,
+  setFontSize,
+  fontFamily,
+  setFontFamily
 }: ToolbarProps) => {
   return (
     <div style={{ marginBottom: 10, display: 'flex', gap: '10px', alignItems: 'center' }}>
@@ -54,6 +62,23 @@ const Toolbar = ({
       />
       <span>{thickness}px</span>
 
+      <label style={{ marginLeft: 10 }}>Font Size:</label>
+      <input
+        type="number"
+        min={10}
+        max={100}
+        value={fontSize}
+        onChange={(e) => setFontSize(Number(e.target.value))}
+      />
+
+      <label style={{ marginLeft: 10 }}>Font Family:</label>
+      <select value={fontFamily} onChange={(e) => setFontFamily(e.target.value)}>
+        <option value="Arial">Arial</option>
+        <option value="Courier New">Courier New</option>
+        <option value="Times New Roman">Times New Roman</option>
+        <option value="Verdana">Verdana</option>
+      </select>
+
       <label>Zoom:</label>
       <input
         type="range"
@@ -65,6 +90,7 @@ const Toolbar = ({
       />
       <span>{zoom.toFixed(1)}x</span>
     </div>
+    
   );
 };
 

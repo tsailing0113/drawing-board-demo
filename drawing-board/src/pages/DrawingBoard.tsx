@@ -14,6 +14,8 @@ const DrawingBoard = () => {
   const [projects, setProjects] = useState(loadProjects());
   const [currentPage, setCurrentPage] = useState(0);
   const canvasRef = useRef<CanvasPageHandle>(null);
+  const [fontSize, setFontSize] = useState(20);
+  const [fontFamily, setFontFamily] = useState('Arial');
   
   const projectIndex = projects.findIndex((p) => p.id === projectId);
   const project = projects[projectIndex];
@@ -50,15 +52,19 @@ const DrawingBoard = () => {
       <h2>{project.title}</h2>
 
       <Toolbar
-        color={color}
-        setColor={setColor}
-        thickness={thickness}
-        setThickness={setThickness}
-        mode={mode}
-        setMode={setMode}
-        zoom={zoom}
-        setZoom={setZoom}
-      />
+  color={color}
+  setColor={setColor}
+  thickness={thickness}
+  setThickness={setThickness}
+  mode={mode}
+  setMode={setMode}
+  zoom={zoom}
+  setZoom={setZoom}
+  fontSize={fontSize}
+  setFontSize={setFontSize}
+  fontFamily={fontFamily}
+  setFontFamily={setFontFamily}
+/>
 
       <div style={{ marginBottom: 10 }}>
         <button onClick={() => setCurrentPage((p) => Math.max(0, p - 1))}>Prev</button>
@@ -85,6 +91,8 @@ const DrawingBoard = () => {
         thickness={thickness}
         mode={mode}
         zoom={zoom}
+        fontSize={fontSize}
+        fontFamily={fontFamily}
       />
     </div>
   );
