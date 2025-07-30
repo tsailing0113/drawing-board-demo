@@ -1,13 +1,13 @@
 {
   "files": {
-    "main.css": "/drawing-board-demo/static/css/main.c20472e7.css",
-    "main.js": "/drawing-board-demo/static/js/main.e896fbf3.js",
+    "main.css": "/drawing-board-demo/static/css/main.94e92c75.css",
+    "main.js": "/drawing-board-demo/static/js/main.b935f76e.js",
     "index.html": "/drawing-board-demo/index.html",
-    "main.c20472e7.css.map": "/drawing-board-demo/static/css/main.c20472e7.css.map",
-    "main.e896fbf3.js.map": "/drawing-board-demo/static/js/main.e896fbf3.js.map"
+    "main.94e92c75.css.map": "/drawing-board-demo/static/css/main.94e92c75.css.map",
+    "main.b935f76e.js.map": "/drawing-board-demo/static/js/main.b935f76e.js.map"
   },
   "entrypoints": [
-    "static/css/main.c20472e7.css",
-    "static/js/main.e896fbf3.js"
+    "static/css/main.94e92c75.css",
+    "static/js/main.b935f76e.js"
   ]
 }
