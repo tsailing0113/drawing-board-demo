@@ -15,12 +15,15 @@ import {
   Text,
   RegularPolygon
 } from 'react-konva';
+import Konva from 'konva';
 
 export type ShapeType = 'brush' | 'eraser' | 'rect' | 'circle' | 'triangle' | 'arrow' | 'text';
 
 export type CanvasPageHandle = {
   undo: () => void;
   redo: () => void;
+  bringForward: () => void;
+  sendBackward: () => void;
 };
 
 type CanvasPageProps = {
@@ -51,7 +54,9 @@ const CanvasPage = forwardRef<CanvasPageHandle, CanvasPageProps>(
     // 🧠 提供 undo / redo 給 parent
     useImperativeHandle(ref, () => ({
       undo,
-      redo
+      redo,
+      bringForward,
+      sendBackward
     }));
 
     const undo = () => {
@@ -69,13 +74,35 @@ const CanvasPage = forwardRef<CanvasPageHandle, CanvasPageProps>(
       setRedoStack(rest);
     };
 
+    // 👉 向前移動一層
+    const bringForward = () => {
+      if (selectedId === null || selectedId >= elements.length - 1) return;
+      const newElements = [...elements];
+      const temp = newElements[selectedId];
+      newElements[selectedId] = newElements[selectedId + 1];
+      newElements[selectedId + 1] = temp;
+      setElements(newElements);
+      setSelectedId(selectedId + 1); // 更新選取 ID
+    };
+
+    // 👉 向後移動一層
+    const sendBackward = () => {
+      if (selectedId === null || selectedId <= 0) return;
+      const newElements = [...elements];
+      const temp = newElements[selectedId];
+      newElements[selectedId] = newElements[selectedId - 1];
+      newElements[selectedId - 1] = temp;
+      setElements(newElements);
+      setSelectedId(selectedId - 1); // 更新選取 ID
+    };
+
     const handleMouseDown = (e: any) => {
+
       isDrawing.current = true;
       const pos = e.target.getStage().getPointerPosition();
-      if (e.target === e.target.getStage()) {
-        setSelectedId(null);
-        setEditingId(null);
-      }
+
+      setSelectedId(null);
+      setEditingId(null);
 
       switch (mode) {
         case 'brush':
@@ -143,7 +170,6 @@ const CanvasPage = forwardRef<CanvasPageHandle, CanvasPageProps>(
           setRedoStack([]);
           break;
         }
-
       }
     };
 
@@ -186,17 +212,24 @@ const CanvasPage = forwardRef<CanvasPageHandle, CanvasPageProps>(
           onMouseDown={handleMouseDown}
           onMousemove={handleMouseMove}
           onMouseup={handleMouseUp}
+          onMouseDownCapture={(e: Konva.KonvaEventObject<MouseEvent>) => {
+            if (e.target === e.target.getStage()) {
+              setSelectedId(null);
+              setEditingId(null);
+            }
+          }}
           style={{ border: '1px solid #ccc', background: 'white' }}
         >
           <Layer>
             {[...elements, current].filter(Boolean).map((el, i) => {
+              const isSelected = i === selectedId;
               switch (el.type) {
                 case 'line':
-                  return <Line key={i} {...el} lineCap="round" tension={0.5} globalCompositeOperation={el.globalCompositeOperation} />;
+                  return <Line key={i} {...el} lineCap="round" tension={0.5} globalCompositeOperation={el.globalCompositeOperation} onClick={() => setSelectedId(i)} />;
                 case 'rect':
-                  return <Rect key={i} {...el} />;
+                  return <Rect key={i} {...el} stroke={isSelected ? 'blue' : el.stroke} dash={isSelected ? [4, 4] : []} onClick={() => setSelectedId(i)} />;
                 case 'circle':
-                  return <Circle key={i} {...el} />;
+                  return <Circle key={i} {...el} stroke={isSelected ? 'blue' : el.stroke} dash={isSelected ? [4, 4] : []} onClick={() => setSelectedId(i)} />;
                 case 'triangle':
                   return (
                     <RegularPolygon
@@ -205,12 +238,14 @@ const CanvasPage = forwardRef<CanvasPageHandle, CanvasPageProps>(
                       y={el.y}
                       sides={3}
                       radius={el.radius}
-                      stroke={el.stroke}
                       strokeWidth={el.strokeWidth}
+                      stroke={isSelected ? 'blue' : el.stroke} 
+                      dash={isSelected ? [4, 4] : []} 
+                      onClick={() => setSelectedId(i)} 
                     />
                   );
                 case 'arrow':
-                  return <Arrow key={i} {...el} />;
+                  return <Arrow key={i} {...el} onClick={() => setSelectedId(i)} />;
                 case 'text':
                   return (
                     <Text
