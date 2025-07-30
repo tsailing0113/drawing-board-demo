@@ -5,6 +5,7 @@ import Toolbar from '../components/Toolbar';
 import { loadProjects, saveProjects } from '../utils/localStorage';
 import type { ShapeType } from '../components/CanvasPage';
 import type { Project as ProjectType } from '../App';  // ✅ 避免名稱衝突
+import { useNavigate } from 'react-router-dom';
 import '../App.css'
 
 type DrawingBoardProps = {
@@ -28,6 +29,7 @@ const DrawingBoard = ({ username, projects, setProjects }: DrawingBoardProps) =>
 
   const projectIndex = projects.findIndex((p: { id: string | undefined; }) => p.id === projectId);
   const project = projects[projectIndex];
+  const navigate = useNavigate();
 
   useEffect(() => {
     saveProjects(projects);
@@ -67,6 +69,14 @@ const DrawingBoard = ({ username, projects, setProjects }: DrawingBoardProps) =>
   return (
     <div className="p-6 bg-gray-100 min-h-screen">
       <h2 className="text-2xl font-bold text-indigo-600 mb-4">{project.title}</h2>
+        <div className="mb-4">
+        <button
+          onClick={() => navigate('/projects')}
+          className="px-4 py-2 bg-gray-300 text-gray-800 rounded-md hover:bg-gray-400 transition"
+        >
+          🔙 Back to Projects
+        </button>
+      </div>
 
       <Toolbar
         color={color}
